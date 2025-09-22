@@ -125,7 +125,7 @@ class _KcalScreenState extends State<KcalScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: Image.asset(
-                            "assets/images/food.jpg",
+                            "images/kcel.jpg",
                             height: size.width < 600 ? 150 : 200,
                           ),
                         ),
