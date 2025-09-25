@@ -1,0 +1,253 @@
+import 'package:final_project/firebase_options.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class AllScreen extends StatefulWidget {
+  const AllScreen({super.key});
+  @override
+  State<AllScreen> createState() => _AllListScreenState();
+}
+
+class _AllListScreenState extends State<AllScreen> {
+  final Future<FirebaseApp> firebase = Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  String searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          SizedBox(height: 20),
+          Text(
+              "เมนูทั้งหมด",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Color.fromARGB(255, 0, 0, 0),
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: "ค้นหาเมนูอาหาร...",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+            ),
+          ),
+
+          Expanded(
+            child: FutureBuilder<List<QuerySnapshot>>( //เปลี่ยนเป็น FutureBuilder ที่ดึงข้อมูลจากหลายคอลเล็กชัน
+              future : Future.wait([ //ใช้ Future.wait เพื่อรอผลลัพธ์จากหลายๆ คอลเล็กชัน
+                FirebaseFirestore.instance.collection("ListFood").get(),
+                FirebaseFirestore.instance.collection("Sweetie").get(),
+                FirebaseFirestore.instance.collection("wrong").get(),
+                FirebaseFirestore.instance.collection("Drink").get(), 
+                  ]),  
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final alldocuments =
+                    snapshot.data!.expand((querySnapshot)=>querySnapshot.docs).where((doc) {//ใช้ where แทน filter
+                      final name = doc['name'].toString().toLowerCase();
+                      return name.contains(searchQuery);
+                    }).toList();
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.75,
+                  ),
+                  itemCount: alldocuments.length,
+                  itemBuilder: (context, index) {
+                    var document = alldocuments[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: Text(
+                                    document["name"],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ShaderMask(
+                                          shaderCallback: (rect) {
+                                            return LinearGradient(
+                                              begin:
+                                                  Alignment
+                                                      .topCenter, // เริ่มจากด้านบน
+                                              end:
+                                                  Alignment
+                                                      .bottomCenter, // จบที่ด้านล่าง
+                                              // กำหนดสีและจุดที่เริ่มจาง
+                                              colors: [
+                                                Colors.black,
+                                                Colors.black,
+                                                Colors.transparent,
+                                              ],
+                                              stops: [
+                                                0.0,
+                                                0.7,
+                                                1.0,
+                                              ], // เริ่มจางที่ 70% ของความสูง
+                                            ).createShader(
+                                              Rect.fromLTRB(
+                                                0,
+                                                0,
+                                                rect.width,
+                                                rect.height,
+                                              ),
+                                            ); // ใช้ rect.width และ rect.height เพื่อให้ครอบคลุมทั้งภาพ
+                                          },
+                                          blendMode: BlendMode.dstIn,
+                                          child: Image.asset(document["image"]),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        
+                                        const Text(
+                                          "วัตถุดิบ",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(document["ingredients"]),
+
+                                        const SizedBox(height: 20),
+
+                                        const Text(
+                                          "วิธีทำ",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(document["method"]),
+                                        const SizedBox(height: 20),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("ปิด"),
+                                    ),
+                                  ],
+                                ),
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              child: ShaderMask(
+                                shaderCallback: (rect) {
+                                  return LinearGradient(
+                                    begin:
+                                        Alignment.topCenter, // เริ่มจากด้านบน
+                                    end:
+                                        Alignment.bottomCenter, // จบที่ด้านล่าง
+                                    // กำหนดสีและจุดที่เริ่มจาง
+                                    colors: [
+                                      Colors.black,
+                                      Colors.black,
+                                      Colors.transparent,
+                                    ],
+                                    stops: [
+                                      0.0,
+                                      0.7,
+                                      1.0,
+                                    ], // เริ่มจางที่ 70% ของความสูง
+                                  ).createShader(
+                                    Rect.fromLTRB(
+                                      0,
+                                      0,
+                                      rect.width,
+                                      rect.height,
+                                    ),
+                                  ); // ใช้ rect.width และ rect.height เพื่อให้ครอบคลุมทั้งภาพ
+                                },
+                                blendMode: BlendMode.dstIn,
+                                child: Image.asset(
+                                  document["image"],
+                                  fit: BoxFit.cover,
+                                  height: 150,
+                                  width: double.infinity,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                document['name'],
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                document['kcal'] + " kcal",
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
