@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:final_project/screen/setting.dart';
 import 'package:final_project/screen/kcal.dart';
 import 'package:final_project/screen/listfood.dart';
-import 'package:final_project/model/popular.dart';
+import 'package:final_project/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 
 class HomePage extends StatefulWidget {
@@ -68,44 +71,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   late Animation<double> _headerAnimation;
   late Animation<double> _cardsAnimation;
 
-  final List<PopularMenuItem> popularMenus = [
-    PopularMenuItem(
-      name: 'ผัดไทย',
-      calories: '350 kcal',
-      rating: 4.8,
-      isRecommended: true,
-    ),
-    PopularMenuItem(
-      name: 'ส้มตำ',
-      calories: '120 kcal',
-      rating: 4.9,
-      isSpicy: true,
-    ),
-    PopularMenuItem(
-      name: 'ข้าวผัดกุ้ง',
-      calories: '420 kcal',
-      rating: 4.7,
-      isNew: true,
-    ),
-    PopularMenuItem(
-      name: 'ต้มยำกุ้ง',
-      calories: '180 kcal',
-      rating: 4.9,
-      isSpicy: true,
-    ),
-    PopularMenuItem(
-      name: 'แกงเขียวหวาน',
-      calories: '280 kcal',
-      rating: 4.6,
-      isSpicy: true,
-    ),
-    PopularMenuItem(
-      name: 'ข้าวหมูแดง',
-      calories: '450 kcal',
-      rating: 4.5,
-      isRecommended: true,
-    ),
-  ];
+  
 
   @override
   void initState() {
@@ -147,15 +113,13 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         children: [
           AnimatedHeader(animation: _headerAnimation),
           CategoriesSection(),
-          PopularMenuSection(popularMenus: popularMenus),
+          PopularScreen(),
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
-
-/// ----------------- Widget Header -----------------
 class AnimatedHeader extends StatelessWidget {
   final Animation<double> animation;
   const AnimatedHeader({super.key, required this.animation});
@@ -249,10 +213,8 @@ class AnimatedHeader extends StatelessWidget {
       }
 
   }
-
-
 class CategoriesSection extends StatelessWidget {
-  CategoriesSection({super.key});
+ const CategoriesSection({super.key});
 
   final List<Map<String, dynamic>> categories = const [
     {'icon': Icons.rice_bowl, 'label': 'อาหารจานเดียว'},
@@ -260,7 +222,6 @@ class CategoriesSection extends StatelessWidget {
     {'icon': Icons.icecream, 'label': 'ของหวาน'},
     {'icon': Icons.fastfood, 'label': 'ของว่าง'},
   ];
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -333,71 +294,211 @@ class CategoriesSection extends StatelessWidget {
   }
 }
 
-/// ----------------- Widget PopularMenu -----------------
-class PopularMenuSection extends StatelessWidget {
-  final List<PopularMenuItem> popularMenus;
-  const PopularMenuSection({super.key, required this.popularMenus});
 
+class PopularScreen extends StatelessWidget {
+  const PopularScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'เมนูยอดนิยม',
-            style: TextStyle(
-              color: scheme.onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'เมนูเเนะนำ',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Column(
-            children:
-                popularMenus.map((item) {
-                  return Card(
-                    color: scheme.surface,
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 30,
-                        backgroundColor: scheme.primary.withOpacity(0.2),
-                        child: const Icon(
-                          Icons.fastfood,
-                          color: Colors.deepPurple,
-                          size: 30,
+          SizedBox(
+            height: 400,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('popura').snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                var documents = snapshot.data!.docs;
+                return GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount: documents.length,
+                  itemBuilder: (context, index) {
+                    var document = documents[index];
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          showDialog(
+                            barrierColor: const Color.fromARGB(93, 131, 131, 131),
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: Text(
+                                    document["name"],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ShaderMask(
+                                          shaderCallback: (rect) {
+                                            return LinearGradient(
+                                              begin:
+                                                  Alignment
+                                                      .topCenter, // เริ่มจากด้านบน
+                                              end:
+                                                  Alignment
+                                                      .bottomCenter, // จบที่ด้านล่าง
+                                              // กำหนดสีและจุดที่เริ่มจาง
+                                              colors: [
+                                                Colors.black,
+                                                Colors.black,
+                                                Colors.transparent,
+                                              ],
+                                              stops: [
+                                                0.0,
+                                                0.7,
+                                                1.0,
+                                              ], // เริ่มจางที่ 70% ของความสูง
+                                            ).createShader(
+                                              Rect.fromLTRB(
+                                                0,
+                                                0,
+                                                rect.width,
+                                                rect.height,
+                                              ),
+                                            ); // ใช้ rect.width และ rect.height เพื่อให้ครอบคลุมทั้งภาพ
+                                          },
+                                          blendMode: BlendMode.dstIn,
+                                          child: Image.asset(document["image"]),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        
+                                        const Text(
+                                          "วัตถุดิบ",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(document["ingredients"]),
+
+                                        const SizedBox(height: 20),
+
+                                        const Text(
+                                          "วิธีทำ",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(document["method"]),
+                                        const SizedBox(height: 20),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("ปิด"),
+                                    ),
+                                  ],
+                                ),
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              child: ShaderMask(
+                                shaderCallback: (rect) {
+                                  return LinearGradient(
+                                    begin:
+                                        Alignment.topCenter, // เริ่มจากด้านบน
+                                    end:
+                                        Alignment.bottomCenter, // จบที่ด้านล่าง
+                                    // กำหนดสีและจุดที่เริ่มจาง
+                                    colors: [
+                                      Colors.black,
+                                      Colors.black,
+                                      Colors.transparent,
+                                    ],
+                                    stops: [
+                                      0.0,
+                                      0.7,
+                                      1.0,
+                                    ], // เริ่มจางที่ 70% ของความสูง
+                                  ).createShader(
+                                    Rect.fromLTRB(
+                                      0,
+                                      0,
+                                      rect.width,
+                                      rect.height,
+                                    ),
+                                  ); // ใช้ rect.width และ rect.height เพื่อให้ครอบคลุมทั้งภาพ
+                                },
+                                blendMode: BlendMode.dstIn,
+                                child: Image.asset(
+                                  document["image"],
+                                  fit: BoxFit.cover,
+                                  height: 150,
+                                  width: double.infinity,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                document['name'],
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                document['kcal'] + " kcal",
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      title: Text(
-                        item.name,
-                        style: TextStyle(
-                          color: scheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${item.calories} | ⭐ ${item.rating}',
-                        style: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
-      ),
+     
     );
   }
 }
-
-
 

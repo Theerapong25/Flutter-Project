@@ -41,20 +41,31 @@ class _KcalScreenState extends State<KcalScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      DropdownButton<Map<String, dynamic>>(
+                      DropdownButton<String>(
                         isExpanded: true,
                         hint: const Text("เลือกอาหาร"),
-                        value: _selectedFood,
-                        items: allFoods.map((doc) {
-                          final food = doc.data() as Map<String, dynamic>;
-                          return DropdownMenuItem<Map<String, dynamic>>(
-                            value: food,
-                            child: Text("${food['name']} (${food['kcal']} kcal)"),
-                          );
-                        }).toList(),
+                        value: _selectedFood?['id'], // ใช้ id เป็น value
+                        items:
+                            allFoods.map((doc) {
+                              final food = doc.data() as Map<String, dynamic>;
+                              food['id'] = doc.id; // เก็บ id ลงใน map ด้วย
+                              return DropdownMenuItem<String>(
+                                value: doc.id, // ไม่ซ้ำแน่นอน
+                                child: Text(
+                                  "${food['name']} (${food['kcal']} kcal)",
+                                ),
+                              );
+                            }).toList(),
                         onChanged: (value) {
                           setState(() {
-                            _selectedFood = value;
+                            _selectedFood = allFoods
+                                .map((doc) {
+                                  final food =
+                                      doc.data() as Map<String, dynamic>;
+                                  food['id'] = doc.id;
+                                  return food;
+                                })
+                                .firstWhere((food) => food['id'] == value);
                           });
                         },
                       ),
@@ -107,8 +118,11 @@ class _KcalScreenState extends State<KcalScreen> {
               children: [
                 const Text("Total Calories:", style: TextStyle(fontSize: 18)),
                 Text(
-                  "${_selectedItems.fold<int>(0, (sum, item) => sum + (item['kcal'] as int))} kcal",
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  "${_selectedItems.fold<double>(0, (sum, item) => sum + (double.tryParse(item['kcal'].toString()) ?? 0))} kcal",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),

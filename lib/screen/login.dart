@@ -1,3 +1,4 @@
+import 'package:final_project/adminscreen/adminSrceen.dart';
 import 'package:final_project/model/register.dart';
 import 'package:final_project/screen/register.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _adminemailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+
+
+  static const String _hardcodeEmailname = 'admin@gmail.com';
+  static const String _hardcodePassword = '123456';
   
+
   Register register = Register();
   final _formKey = GlobalKey<FormState>();
 
@@ -72,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     TextFormField(
+                      controller: _adminemailController, 
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
@@ -90,9 +100,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         register.email = email!;
                       },
                     ),
-
                     const SizedBox(height: 20),
                     TextFormField(
+                      controller: _passwordController, 
                       obscureText: true,
                       decoration: InputDecoration(
                         filled: true,
@@ -122,13 +132,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   _formKey.currentState!.save();
 
                   try {
+                    if (_adminemailController.text == _hardcodeEmailname &&
+                        _passwordController.text == _hardcodePassword) {
+                      if (mounted) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const AdminScreen(),
+                          ),
+                        );
+                      }
+                      return; 
+                    }
                     await FirebaseAuth.instance.signInWithEmailAndPassword(
                       email: register.email!,
                       password: register.password!,
                     );
+
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setBool('isLoggedIn', true);
-                    
+
                     if (mounted) {
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
@@ -138,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                   } on FirebaseAuthException {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'),
                       ),
                     );
