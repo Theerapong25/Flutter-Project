@@ -10,8 +10,6 @@ class Formsreen extends StatefulWidget {
   State<Formsreen> createState() => _FormsreenState();
 }
 class _FormsreenState extends State<Formsreen> {
-
-
 FoodDetailScreen foodDetailScreen = FoodDetailScreen();
 final formkey = GlobalKey<FormState>();
 final Future<FirebaseApp> firebase = Firebase.initializeApp();

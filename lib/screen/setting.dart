@@ -1,12 +1,25 @@
 import 'package:final_project/screen/login.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'profile.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'theme_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SettingScreen extends StatelessWidget {
   const SettingScreen({super.key});
+
+  
+  Future<void> _logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isLoggedIn');
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +28,7 @@ class SettingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("การตั้งค่า"),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: const Color.fromARGB(0, 211, 47, 47),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -24,6 +37,7 @@ class SettingScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          
           Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
@@ -43,7 +57,7 @@ class SettingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ---------------- App Version ----------------
+          
           Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
@@ -57,7 +71,7 @@ class SettingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ---------------- Toggle Theme ----------------
+         
           Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
@@ -72,20 +86,29 @@ class SettingScreen extends StatelessWidget {
               },
             ),
           ),
+          const SizedBox(height: 12),
+
           Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            child: ElevatedButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut().then((onValue){
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
-                    return LoginScreen ();
-                  },));
-                });
-              },
-              child: const Text('ออกจากระบบ'),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  
+                ),
+                onPressed: () => _logout(context),
+                child: const Text(
+                  'ออกจากระบบ',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
           ),
         ],

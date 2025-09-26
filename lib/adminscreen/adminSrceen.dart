@@ -1,5 +1,6 @@
+import 'package:final_project/adminscreen/display.dart';
 import 'package:final_project/adminscreen/formsreen.dart';
-import 'package:final_project/screen/allmenu.dart';
+
 import 'package:flutter/material.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _AdminScreenState extends State<AdminScreen> {
         body: const TabBarView(
           children: [
             Formsreen(),
-            AllScreen(),
+            AllScreens(),
           ],
         ),
         backgroundColor: Colors.amber,
